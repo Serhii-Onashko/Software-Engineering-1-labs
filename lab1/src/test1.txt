@@ -1,0 +1,10 @@
+PROCEDURE 123 PRO(* lalala *) 266 PTU 123 PRO (
+BEGIN END ;
+(**)END
+(* *);
+(*  *(  **PRO*** :(*  **)END;
+(* enter
+ô*)START;
+(* what if *
+)HAHA(*
+lalala*) END;;;
