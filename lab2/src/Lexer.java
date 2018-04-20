@@ -69,8 +69,6 @@ public class Lexer {
 		                	} else if (digit == 13) {
 		                		digit = reader.read();//just read next symbol
 		                	} else {
-		                		i++;
-		                		digit = reader.read();//read next symbol
 		                		if (digit == '*') {
 		                			previous = true;
 		                		} else if (previous) {
@@ -80,6 +78,8 @@ public class Lexer {
 		                				previous = false;
 		                			}
 		                		}
+		                		i++;
+		                		digit = reader.read();//read next symbol
 		                	}
 	                	}
 	                	if (digit == -1) {

@@ -1,43 +1,42 @@
 public class Parser {
 	int index=0;
 	Tables table;
-	ProcedureDeclaration buffer;
 	
-	private boolean identifier(int level) {
-		table.addTreeNode(level, "<identifier>");
+	private boolean identifier(TreeNode root) {
+		TreeNode node = new TreeNode(Tables.identifier);
 		if (index >= table.lexemes.size()) {
-			table.addTreeNode(level + 1, "<empty>");
 			return false;
 		}
 		int buff = table.lexemes.get(index).code;
 		if (buff < 1000) {
 			return false;
 		}
-		table.addTreeNode(level + 1, buff);
+		node.add(index);
+		root.add(node);
 		index++;
 		return true;
 	}
 	
-	private boolean variableIdentifier(int level) {
-		table.addTreeNode(level, "<variable-identifier>");
-		if (identifier(level+1) == false) {
+	private boolean variableIdentifier(TreeNode root) {
+		TreeNode node = new TreeNode(Tables.variableIdentifier);
+		if (identifier(node) == false) {
 			return false;
 		}
-		buffer.parameters.add(table.lexemes.get(index-1).code);
+		root.add(node);
 		return true;
 	}
 	
-	private boolean procedureIdentifier(int level) {
-		table.addTreeNode(level, "<procedure-identifier>");
-		if (identifier(level+1) == false) {
+	private boolean procedureIdentifier(TreeNode root) {
+		TreeNode node = new TreeNode(Tables.procedureIdentifier);
+		if (identifier(node) == false) {
 			return false;
 		}
-		buffer.id = table.lexemes.get(index-1).code;
+		root.add(node);
 		return true;
 	}
 	
-	private boolean unsignedInteger(int level) {
-		table.addTreeNode(level, "<unsigned-integer>");
+	private boolean unsignedInteger(TreeNode root) {
+		TreeNode node = new TreeNode(Tables.unsignedInteger);
 		if (index >= table.lexemes.size()) {
 			return false;
 		}
@@ -45,268 +44,272 @@ public class Parser {
 		if ((buff < 500) || (buff > 999)) {
 			return false;
 		}
-		buffer.parameters.add(buff);
-		table.addTreeNode(level + 1, buff);
+		node.add(index);
+		root.add(node);
 		index++;
 		return true;
 	}
 	
-	private boolean actualArgumentsList(int level) {
-		table.addTreeNode(level, "<actual-arguments-list>");
+	private boolean actualArgumentsList(TreeNode root) {
+		TreeNode node = new TreeNode(Tables.actualArguments);
 		if ((index >= table.lexemes.size()) || (table.lexemes.get(index).code != ',')) {
-			table.addTreeNode(level + 1, "<empty>");
+			node.add(Tables.empty);
+			root.add(node);
 			return true;
 		}
-		table.addTreeNode(level + 1, table.lexemes.get(index).code);
+		node.add(index);
 		index++;
-		if (unsignedInteger(level+1) == false) {
+		if (unsignedInteger(node) == false) {
 			return false;
 		}
 		
-		if (actualArgumentsList(level+1) == false) {
+		if (actualArgumentsList(node) == false) {
 			return false;
 		}
-		
+
+		root.add(node);
 		return true;
 	}
 
-	private boolean actualArguments(int level) {
-		table.addTreeNode(level, "<actual-arguments>");
+	private boolean actualArguments(TreeNode root) {
+		TreeNode node = new TreeNode(Tables.actualArguments);
 		if ((index >= table.lexemes.size()) || (table.lexemes.get(index).code != '(')) {
-			table.addTreeNode(level + 1, "<empty>");
+			node.add(Tables.empty);
+			root.add(node);
 			return true;
 		}
-		table.addTreeNode(level + 1, table.lexemes.get(index).code);
+		node.add(index);
 		index++;
 
-		if (unsignedInteger(level+1) == false) {
+		if (unsignedInteger(node) == false) {
 			return false;
 		}
 		
-		if (actualArgumentsList(level+1) == false) {
+		if (actualArgumentsList(node) == false) {
 			return false;
 		}
 		
 		if ((index >= table.lexemes.size()) || (table.lexemes.get(index).code != ')')) {
 			return false;
 		}
-		table.addTreeNode(level + 1, table.lexemes.get(index).code);
+		node.add(index);
+		root.add(node);
 		index++;
 		return true;
 	}
 
-	private boolean statement(int level) {
-		table.addTreeNode(level, "<statement>");
-		int oldSize = table.tree.size();
+	private boolean statement(TreeNode root) {
+		TreeNode node = new TreeNode(Tables.statement);
 		int buff = index;
-		buffer = new ProcedureDeclaration();
-		if (procedureIdentifier(level+1) == false) {
+		if (procedureIdentifier(node) == false) {
 			index = buff;
-			for (int i = table.tree.size() - 1; i >= oldSize; i--) {
-				table.tree.remove(i);
-			}
 			if ((index >= table.lexemes.size()) || (table.lexemes.get(index).code != 403)) {
 							
 				return false;
 			}
-			table.addTreeNode(level + 1, table.lexemes.get(index).code);
+			node.add(index);
 			index++;
 			if ((index >= table.lexemes.size()) || (table.lexemes.get(index).code != ';')) {
-				index = buff;
 				return false;
 			}
-			table.addTreeNode(level + 1, table.lexemes.get(index).code);
-			buffer.id = 403;
-			table.statements.add(buffer);
+			node.add(index);
+			root.add(node);
 			index++;
 			return true;
 		}
 
-		if (actualArguments(level+1) == false) {
-			index = buff;
+		if (actualArguments(node) == false) {
 			return false;
 		}
 		if ((index >= table.lexemes.size()) || (table.lexemes.get(index).code != ';')) {
+			return false;
+		}
+		node.add(index);
+		root.add(node);
+		index++;
+		return true;
+	}
+
+	private boolean statementsList(TreeNode root) {
+		TreeNode node = new TreeNode(Tables.statementsList);
+		int buff = index;
+		if (statement(root) == false) {
 			index = buff;
-			return false;
-		}
-		table.addTreeNode(level + 1, table.lexemes.get(index).code);
-		index++;
-		table.statements.add(buffer);
-		return true;
-	}
-
-	private boolean statementsList(int level) {
-		table.addTreeNode(level, "<statements-list>");
-		int oldSize = table.tree.size();
-		if (statement(level+1) == false) {
-			for (int i = table.tree.size() - 1; i >= oldSize; i--) {
-				table.tree.remove(i);
-			}
-			table.addTreeNode(level + 1, "<empty>");
+			root.add(Tables.empty);
 			return true;
 		}
-		if (statementsList(level+1) == false) {
+		if (statementsList(node) == false) {
 			return false;
 		}
+		root.add(node);
 		return true;
 	}
 
-	private boolean identifiersList(int level) {
-		table.addTreeNode(level, "<identifiers-list>");
+	private boolean identifiersList(TreeNode root) {
+		TreeNode node = new TreeNode(Tables.identifiersList);
 		if ((index >= table.lexemes.size()) || (table.lexemes.get(index).code != ',')) {
-			table.addTreeNode(level + 1, "<empty>");
+			node.add(Tables.empty);
+			root.add(node);
 			return true;
 		}
-		table.addTreeNode(level + 1, table.lexemes.get(index).code);
+		node.add(index);
 		index++;
-		if (variableIdentifier(level+1) == false) {
+		if (variableIdentifier(node) == false) {
 			return false;
 		}
-		if (identifiersList(level+1) == false) {
+		if (identifiersList(node) == false) {
 			return false;
 		}
+		root.add(node);
 		return true;
 	}
 	
-	private boolean paramatersList(int level) {
-		table.addTreeNode(level, "<paramaters-list>");
+	private boolean paramatersList(TreeNode root) {
+		TreeNode node = new TreeNode(Tables.paramatersList);
 		if ((index >= table.lexemes.size()) || (table.lexemes.get(index).code != '(')) {
-			table.addTreeNode(level + 1, "<empty>");
+			node.add(Tables.empty);
+			root.add(node);
 			return true;
 		}
-		table.addTreeNode(level + 1, table.lexemes.get(index).code);
+		node.add(index);
 		index++;
-		if (variableIdentifier(level+1) == false) {
+		if (variableIdentifier(node) == false) {
 			table.addParserError("identifier",index);
-			//err expected id
 			return false;
 		}
-		if (identifiersList(level+1) == false) {
+		if (identifiersList(node) == false) {
 			table.addParserError("<identifier>",index);
 			return false;
 		}
 		if ((index >= table.lexemes.size()) || (table.lexemes.get(index).code != ')')) {
 			return false;
 		}
-		table.addTreeNode(level + 1, table.lexemes.get(index).code);
+		node.add(index);
+		root.add(node);
 		index++;
 		return true;
 	}
 
-	private boolean procedure(int level) {
-		table.addTreeNode(level, "<procedure>");
-		int buff = index;
+	private boolean procedure(TreeNode root) {
+		TreeNode node = new TreeNode(Tables.procedure);
 		if ((index >= table.lexemes.size()) || (table.lexemes.get(index).code != 400)) {
 			return false;
 		}
-		table.addTreeNode(level + 1, table.lexemes.get(index).code);
+		node.add(index);
 		index++;
-		buffer = new ProcedureDeclaration();
-		if (procedureIdentifier(level+1) == false) {
-			index = buff;
+		if (procedureIdentifier(node) == false) {
 			return false;
 		}
-		if (paramatersList(level+1) == false) {
-			index = buff;
+		if (paramatersList(node) == false) {
 			return false;
 		}
 		if ((index >= table.lexemes.size()) || (table.lexemes.get(index).code != ';')) {
-			index = buff;
 			return false;
 		}
-		table.addTreeNode(level + 1, table.lexemes.get(index).code);
+		node.add(index);
+		root.add(node);
 		index++;
-		table.procedureDeclarations.add(buffer);
 		return true;
 	}
 
-	private boolean procedureDeclarations(int level) {
-		table.addTreeNode(level, "<procedure-declarations>");
-		int oldSize = table.tree.size();
-		if (procedure(level+1) == false) {
-			for (int i = table.tree.size() - 1; i >= oldSize; i--) {
-				table.tree.remove(i);
-			}
-			table.addTreeNode(level + 1, "<empty>");
+	private boolean procedureDeclarations(TreeNode root) {
+		TreeNode node = new TreeNode(Tables.procedureDeclarations);
+		int buff = index;
+		if (procedure(node) == false) {
+			index = buff;
+			node.add(Tables.empty);
+			root.add(node);
 			return true;
 		}
-		if (procedureDeclarations(level+1) == false) {
+		if (procedureDeclarations(node) == false) {
+			root.add(node);
 			return false;
 		}
+		root.add(node);
 		return true;
 	}
 
-	private boolean declarations(int level) {
-		table.addTreeNode(level, "<declarations>");
-		if (procedureDeclarations(level+1) == false) {
+	private boolean declarations(TreeNode root) {
+		TreeNode node = new TreeNode(Tables.declarations);
+		if (procedureDeclarations(node) == false) {
+			root.add(node);
 			return false;
 		}
+		root.add(node);
 		return true;
 	}
 	
-	private boolean block(int level) {
-		table.addTreeNode(level, "<block>");
-		if (declarations(level+1) == false) {
+	private boolean block(TreeNode root) {
+		TreeNode node = new TreeNode(Tables.block);
+		if (declarations(node) == false) {
+			root.add(node);
 			return false;
 		}
 		if ((index >= table.lexemes.size()) || (table.lexemes.get(index).code != 401)) {
 			table.addParserError("BEGIN",index);
+			root.add(node);
 			return false;
 		}
-		table.addTreeNode(level + 1, table.lexemes.get(index).code);
+		node.add(index);
 		index++;
-		if (statementsList(level+1) == false) {
+		if (statementsList(node) == false) {
+			root.add(node);
 			return false;
 		}
 		if ((index >= table.lexemes.size()) || (table.lexemes.get(index).code != 402)) {
 			table.addParserError("END",index);
+			root.add(node);
 			return false;
 		}
-		table.addTreeNode(level + 1, table.lexemes.get(index).code);
+		node.add(index);
+		root.add(node);
 		index++;
 		return true;
 	}
 
-	private boolean program(int level){
-		table.addTreeNode(level, "<program>");
+	private boolean program(TreeNode root){
+		TreeNode node = new TreeNode(Tables.program);
 		if ((index >= table.lexemes.size()) || (table.lexemes.get(index).code != 400)) {
 			table.addParserError("PROCEDURE",index);
+			root.add(node);
 			return false;
 		}
-		table.addTreeNode(level + 1, table.lexemes.get(index).code);
+		node.add(index);
 		index++;
-		buffer = new ProcedureDeclaration();
-		if (procedureIdentifier(level+1) == false) {
+		if (procedureIdentifier(node) == false) {
 			table.addParserError("<identifier>",index);
+			root.add(node);
 			return false;
 		}
-		if (paramatersList(level+1) == false) {
+		if (paramatersList(node) == false) {
+			root.add(node);
 			return false;
 		}
-		table.procedureDeclarations.add(buffer);
 		if ((index >= table.lexemes.size()) || (table.lexemes.get(index).code != ';')) {
 			table.addParserError(";",index);
+			root.add(node);
 			return false;
 		}
-		table.addTreeNode(level + 1, table.lexemes.get(index).code);
+		node.add(index);
 		index++;
-		if (block(level+1) == false) {
+		if (block(node) == false) {
+			root.add(node);
 			return false;
 		}
 		if ((index >= table.lexemes.size()) || (table.lexemes.get(index).code != ';')) {
 			table.addParserError(";",index);
+			root.add(node);
 			return false;
 		}
-		table.addTreeNode(level + 1, table.lexemes.get(index).code);
+		node.add(index);
+		root.add(node);
 		index++;
 		return true;
 	}
 	
 	private boolean signalProgram(){
-		int level = 0;
-		table.addTreeNode(level, "<signal-program>");
-		if (program(level+1) == false) {
+		table.treeRoot = new TreeNode(Tables.signalProgram);
+		if (program(table.treeRoot) == false) {
 			return false;
 		}
 		if ((index < table.lexemes.size()) && (table.lexemes.get(index).code == '#')) {

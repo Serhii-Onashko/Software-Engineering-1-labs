@@ -8,9 +8,25 @@ public class Tables {
 	ArrayList<Lexeme> lexemes = new ArrayList<Lexeme>();
 	ArrayList<String> errors = new ArrayList<String>();
 	//parser
-	ArrayList<ProcedureDeclaration> procedureDeclarations = new ArrayList<ProcedureDeclaration>();
-	ArrayList<ProcedureDeclaration> statements = new ArrayList<ProcedureDeclaration>();
-	ArrayList<TreeNode> tree = new ArrayList<TreeNode>();
+	TreeNode treeRoot = new TreeNode();
+	
+	static final int signalProgram = -2;
+	static final int program = -3;
+	static final int block = -4;
+	static final int declarations = -5;
+	static final int procedureDeclarations = -6;
+	static final int empty = -7;
+	static final int procedure = -8;
+	static final int paramatersList = -9;
+	static final int identifiersList = -10;
+	static final int statementsList = -11;
+	static final int statement = -12;
+	static final int actualArguments = -13;
+	static final int actualArgumentsList = -14;
+	static final int unsignedInteger = -15;
+	static final int procedureIdentifier = -16;
+	static final int variableIdentifier = -17;
+	static final int identifier = -18;
 	//lexer
 	public String getTokken(int code){
 		if (code < 128) {
@@ -142,34 +158,74 @@ public class Tables {
 		}
 		
 	}
-	void addTreeNode(int _level, String _node) {
-		TreeNode buff = new TreeNode(_level,_node);
-		tree.add(buff);
+	String getNodeName(int id) {
+        switch(id) {
+        	case -1:
+        		return "!<Parser Error: 'TreeNode.value=-1'>";
+            case signalProgram:
+            	return "<signal-program>";
+            case program:
+            	return "<program>";
+            case block:
+            	return "<block>";
+            case declarations:
+            	return "<declarations>";
+            case procedureDeclarations:
+            	return "<procedure-declarations>";
+            case empty:
+            	return "<empty>";
+            case procedure:
+            	return "<procedure>";
+            case paramatersList:
+            	return "<paramaters-list>";
+            case identifiersList:
+            	return "<identifiers-list>";
+            case statementsList:
+            	return "<statements-list>";
+            case statement:
+            	return "<statement>";
+            case actualArguments:
+            	return "<actual-arguments>";
+            case actualArgumentsList:
+            	return "<actual-arguments-list>";
+            case unsignedInteger:
+            	return "<unsigned-integer>";
+            case procedureIdentifier:
+            	return "<procedure-identifier>";
+            case variableIdentifier:
+            	return "<variable-identifier>";
+            case identifier:
+            	return "<identifier>";
+        }
+        if (id < lexemes.size()) {
+        	return getTokken(lexemes.get(id).code);
+        } else {
+        	return "!<Parser Error: lexemes id Out Of Range>";
+        }
 	}
-	void addTreeNode(int _level, int _code) {
-		TreeNode buff = new TreeNode(_level,_code);
-		tree.add(buff);
-	}
-	String getTreeNode(int id) {
-		if (id<tree.size()) {
-			TreeNode node = tree.get(id);
-			String buff = "";
-			for (int i=0;i<node.level*2;i++) {
-				buff += '.';
-			}
-			if (node.code>0) {
-				buff += node.code +" "+ getTokken(node.code) +"\n";
-			} else {
-				buff += node.node +"\n";
-			}
-			return buff;
+
+	void printTreeNode(int level, TreeNode root) {
+		String buff = "";
+		for (int i=0;i<level;i++) {
+			buff += '.';
 		}
-		return "OutOfRange";
+
+		if (root.value>-1) {
+			buff += lexemes.get(root.value).code +" "+ getNodeName(root.value) +"\n";
+		} else {
+			buff += getNodeName(root.value) +"\n";
+		}
+		
+		System.out.print(buff);
+		for (int i=0; i<root.kids.size(); i++) {
+			printTreeNode(level + 2, root.kids.get(i));
+		}
 	}
 	void printTree() {
 		System.out.println("\nTree:\n");
-		for (int i = 0; i < tree.size(); i++) {
-			System.out.print(getTreeNode(i));
+		System.out.println(getNodeName(treeRoot.value));
+		for (int i=0; i<treeRoot.kids.size(); i++) {
+			printTreeNode(2, treeRoot.kids.get(i));
 		}
 	}
 }

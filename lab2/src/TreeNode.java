@@ -1,14 +1,19 @@
+import java.util.ArrayList;
 
 public class TreeNode {
-	public int level;
-	public int code = -1;
-	public String node;
-	TreeNode(int _level, String _node){
-		level = _level;
-		node = _node;
+	ArrayList<TreeNode> kids= new ArrayList<TreeNode>();
+	public int value;
+	TreeNode(int _code){
+		value = _code;
 	}
-	TreeNode(int _level, int _code){
-		level = _level;
-		code = _code;
+	TreeNode(){
+		value = -1;
+	}
+	void add(TreeNode kid) {
+		kids.add(kid);
+	}
+	void add(int code) {
+		TreeNode kid = new TreeNode(code);
+		kids.add(kid);
 	}
 }
